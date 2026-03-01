@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AuthVector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <h1>AuthVector</h1>
+          <p>RBAC Visualizer + Blast Radius Simulator</p>
+        </div>
+        <div class="hero-actions">
+          <button id="analyzeBtn">Analyze RBAC</button>
+          <button id="dotBtn" class="secondary">Refresh DOT</button>
+          <button id="downloadJsonBtn" class="secondary">Download JSON</button>
+        </div>
+      </section>
+
+      <section class="panel controls">
+        <div class="grid4">
+          <div>
+            <label for="source">Source</label>
+            <select id="source">
+              <option value="cluster">Live Cluster (in-cluster)</option>
+              <option value="manifest">Pasted Manifest</option>
+            </select>
+          </div>
+          <div>
+            <label for="namespaces">Namespaces (optional)</label>
+            <input id="namespaces" placeholder="all namespaces by default, e.g. kube-system,prod" />
+          </div>
+          <div>
+            <label for="layout">Graph Layout</label>
+            <select id="layout">
+              <option value="layered">Layered</option>
+              <option value="radial">Radial</option>
+            </select>
+          </div>
+          <div>
+            <label for="page">Page</label>
+            <input id="page" type="number" min="1" value="1" />
+          </div>
+        </div>
+
+        <div class="grid4 compact">
+          <div>
+            <label for="pageSize">Page Size</label>
+            <input id="pageSize" type="number" min="1" max="2000" value="200" />
+          </div>
+          <div>
+            <label for="maxSubjects">Max Subjects</label>
+            <input id="maxSubjects" type="number" min="1" max="10000" value="2000" />
+          </div>
+        </div>
+
+        <div class="saved-views">
+          <input id="viewName" placeholder="View name (e.g. prod-risky-sa)" />
+          <button id="saveViewBtn" class="secondary">Save View</button>
+          <select id="savedViewsSelect">
+            <option value="">Saved views</option>
+          </select>
+          <button id="loadViewBtn" class="secondary">Load</button>
+          <button id="deleteViewBtn" class="secondary">Delete</button>
+          <button id="copyLinkBtn" class="secondary">Copy Share Link</button>
+        </div>
+
+        <div class="status" id="sourceStatus">Checking in-cluster status...</div>
+        <div class="status" id="pageStatus"></div>
+
+        <label for="manifest">Kubernetes RBAC YAML (used when source=manifest)</label>
+        <textarea id="manifest" spellcheck="false" placeholder="Paste Role/ClusterRole/Binding manifests here..."></textarea>
+      </section>
+
+      <section class="cards" id="summaryCards">
+        <article class="metric-card">
+          <h3>Subjects (Page)</h3>
+          <p id="mSubjects">-</p>
+        </article>
+        <article class="metric-card">
+          <h3>Who Can Exec Prod</h3>
+          <p id="mExecProd">-</p>
+        </article>
+        <article class="metric-card">
+          <h3>Role Bindings</h3>
+          <p id="mBindings">-</p>
+        </article>
+        <article class="metric-card">
+          <h3>Service Accounts</h3>
+          <p id="mSAs">-</p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="graph">Graph</button>
+          <button class="tab" data-tab="risky">Risk Table</button>
+          <button class="tab" data-tab="blast">Blast Radius</button>
+          <button class="tab" data-tab="json">JSON</button>
+          <button class="tab" data-tab="dot">DOT</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-graph">
+          <div class="graph-tools">
+            <button id="fitGraphBtn" class="secondary">Fit Graph</button>
+            <label for="graphNamespace">Namespace</label>
+            <select id="graphNamespace">
+              <option value="">All</option>
+            </select>
+            <label for="graphSearch">Subject Search</label>
+            <input id="graphSearch" placeholder="ServiceAccount:prod:app" />
+            <label class="checkbox-line" for="graphRiskyOnly">
+              <input id="graphRiskyOnly" type="checkbox" />
+              Risky subjects only
+            </label>
+          </div>
+          <div class="graph-layout">
+            <div id="graphWrap">
+              <svg id="graphSvg" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" />
+                  </marker>
+                </defs>
+                <g id="graphPanZoom"></g>
+              </svg>
+            </div>
+            <aside class="inspector" id="inspector">
+              <h3>Node Inspector</h3>
+              <p class="muted">Click a node in the graph to inspect permissions and relationships.</p>
+              <div id="inspectorBody"></div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-risky">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Risk Count</th>
+                  <th>Capabilities</th>
+                </tr>
+              </thead>
+              <tbody id="riskTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-blast">
+          <div id="blastWrap" class="blast-grid"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-json">
+          <pre id="jsonOutput">Run analysis to view output.</pre>
+        </div>
+
+        <div class="tab-panel" id="tab-dot">
+          <pre id="dotOutput">Press "Refresh DOT" after analysis.</pre>
+        </div>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
