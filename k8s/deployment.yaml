@@ -18,7 +18,7 @@ spec:
       serviceAccountName: authvector
       containers:
         - name: authvector
-          image: ghcr.io/your-org/authvector:latest
+          image: ghcr.io/kroy-the-rabbit/authvector:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: AUTHVECTOR_VIEW_STORE

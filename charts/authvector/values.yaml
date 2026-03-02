@@ -2,9 +2,10 @@ namespace:
   create: true
 
 image:
-  repository: ghcr.io/your-org/authvector
+  repository: ghcr.io/kroy-the-rabbit/authvector
   tag: latest
   pullPolicy: IfNotPresent
+  pullSecrets: []
 
 replicaCount: 2
 

@@ -16,6 +16,10 @@ spec:
         app: {{ include "authvector.fullname" . }}
     spec:
       serviceAccountName: {{ include "authvector.serviceAccountName" . }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: authvector
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
