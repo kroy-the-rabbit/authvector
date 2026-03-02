@@ -53,3 +53,15 @@ probes:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    use-forwarded-headers: "true"
+    forwarded-for-header: "CF-Connecting-IP"
+  host: authvector.lan.kroy.io
+  tls:
+    secretName: authvector-lan-kroy-io
