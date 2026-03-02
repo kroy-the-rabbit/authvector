@@ -55,7 +55,20 @@ class InClusterRBACLoader:
         items = data.get("items", [])
         if not isinstance(items, list):
             return []
-        return [item for item in items if isinstance(item, dict)]
+
+        # Kubernetes list responses omit `kind` on individual items; derive it
+        # from the list kind (e.g. "ServiceAccountList" -> "ServiceAccount").
+        list_kind = str(data.get("kind") or "")
+        item_kind = list_kind[: -len("List")] if list_kind.endswith("List") else ""
+
+        result = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if item_kind and not item.get("kind"):
+                item = {**item, "kind": item_kind}
+            result.append(item)
+        return result
 
     def _get(self, path: str) -> bytes:
         assert self.api_base is not None

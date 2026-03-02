@@ -1,3 +1,6 @@
+import json
+
+from app.kube_rbac import InClusterRBACLoader
 from app.main import create_app
 
 
@@ -29,6 +32,27 @@ SAMPLE_OBJECTS = [
         ],
     },
 ]
+
+
+def test_list_items_injects_kind(monkeypatch):
+    """Kubernetes list responses omit `kind` on individual items; _list_items must inject it."""
+    loader = InClusterRBACLoader()
+    monkeypatch.setattr("app.kube_rbac.InClusterRBACLoader.is_in_cluster", lambda _self: True)
+
+    api_response = json.dumps({
+        "kind": "ServiceAccountList",
+        "apiVersion": "v1",
+        "items": [
+            {"metadata": {"name": "default", "namespace": "default"}},
+            {"metadata": {"name": "app", "namespace": "prod"}},
+        ],
+    }).encode()
+
+    monkeypatch.setattr("app.kube_rbac.InClusterRBACLoader._get", lambda _self, path: api_response)
+
+    items = loader._list_items("/api/v1/serviceaccounts")
+    assert len(items) == 2
+    assert all(item["kind"] == "ServiceAccount" for item in items)
 
 
 def test_sources_endpoint(monkeypatch):
