@@ -84,6 +84,7 @@ textarea { min-height: 170px; resize: vertical; margin-top: 8px; }
 .status { margin: 10px 0 0; font-size: 0.95rem; color: var(--muted); }
 .status.ok { color: var(--ok); }
 .status.warn { color: var(--warn); }
+.hidden { display: none; }
 
 .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .metric-card {

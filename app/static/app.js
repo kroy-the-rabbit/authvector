@@ -37,6 +37,7 @@
     graphNamespace: document.getElementById("graphNamespace"),
     graphSearch: document.getElementById("graphSearch"),
     graphRiskyOnly: document.getElementById("graphRiskyOnly"),
+    graphEmptyState: document.getElementById("graphEmptyState"),
     graphSvg: document.getElementById("graphSvg"),
     graphPanZoom: document.getElementById("graphPanZoom"),
     inspectorBody: document.getElementById("inspectorBody"),
@@ -105,7 +106,11 @@
 
     const p = summary.pagination || null;
     if (p) {
-      el.pageStatus.textContent = `Page ${p.page}/${p.total_pages} | page size ${p.page_size} | showing ${p.page_subjects}/${p.subjects_after_limit} subjects after max_subjects=${p.max_subjects} (cluster total ${p.total_subjects})`;
+      let msg = `Page ${p.page}/${p.total_pages} | page size ${p.page_size} | showing ${p.page_subjects}/${p.subjects_after_limit} subjects after max_subjects=${p.max_subjects} (cluster total ${p.total_subjects})`;
+      if (p.total_subjects === 0) {
+        msg += " | no binding subjects found (check source, namespace filter, and RBAC bindings)";
+      }
+      el.pageStatus.textContent = msg;
     } else {
       el.pageStatus.textContent = "";
     }
@@ -236,7 +241,26 @@
     return { nodes: filteredNodes, edges: filteredEdges };
   }
 
+  function renderGraphEmptyState(analysis) {
+    const summary = (analysis && analysis.summary) || {};
+    const pagination = summary.pagination || {};
+    const total = Number(pagination.total_subjects || 0);
+    if (total > 0) {
+      el.graphEmptyState.classList.add("hidden");
+      el.graphEmptyState.textContent = "";
+      return;
+    }
+
+    const isCluster = String(summary.source || "").toLowerCase() === "cluster";
+    el.graphEmptyState.classList.remove("hidden");
+    el.graphEmptyState.classList.add("warn");
+    el.graphEmptyState.textContent = isCluster
+      ? "No subjects found from live RBAC bindings. Check namespace filter and cluster RoleBinding/ClusterRoleBinding subjects."
+      : "No subjects found in manifest. Add RoleBinding/ClusterRoleBinding entries with subjects.";
+  }
+
   function renderGraph(analysis) {
+    renderGraphEmptyState(analysis);
     const { nodes, edges } = getFilteredGraph(analysis);
     const layer = el.graphPanZoom;
     layer.innerHTML = "";
@@ -562,7 +586,15 @@
   }
 
   async function runAnalysis() {
+    if (el.source.value === "manifest" && !String(el.manifest.value || "").trim()) {
+      el.pageStatus.textContent = "Manifest mode selected, but no YAML was provided.";
+      switchTab("json");
+      el.jsonOutput.textContent = "Error: Field 'manifest' is required when source=manifest";
+      return;
+    }
+
     setLoading(true);
+    el.pageStatus.textContent = "Analyzing RBAC...";
     try {
       const analysis = await sendJSON("/api/analyze", "POST", buildPayload());
       state.analysis = analysis;
@@ -579,6 +611,7 @@
       el.jsonOutput.textContent = JSON.stringify(analysis, null, 2);
       switchTab("graph");
     } catch (err) {
+      el.pageStatus.textContent = `Analyze failed: ${err.message}`;
       el.jsonOutput.textContent = `Error: ${err.message}`;
       switchTab("json");
     } finally {
