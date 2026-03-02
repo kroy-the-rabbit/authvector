@@ -3,7 +3,7 @@ namespace:
 
 image:
   repository: ghcr.io/kroy-the-rabbit/authvector
-  tag: latest
+  tag: ""  # required — set via --set image.tag=sha-XXXXXX at deploy time
   pullPolicy: IfNotPresent
   pullSecrets: []
 
