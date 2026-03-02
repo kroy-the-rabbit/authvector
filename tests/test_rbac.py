@@ -41,3 +41,18 @@ def test_graphviz_has_nodes():
     dot = RBACAnalyzer.from_manifest(SAMPLE).graphviz_dot()
     assert "digraph AuthVector" in dot
     assert "ServiceAccount:prod:app" in dot
+
+
+def test_unbound_service_accounts_are_included():
+    manifest = """
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lonely
+  namespace: prod
+"""
+
+    out = RBACAnalyzer.from_manifest(manifest).analyze()
+    key = "ServiceAccount:prod:lonely"
+    assert key in out["effective_permissions"]
+    assert out["effective_permissions"][key]["grants"] == []

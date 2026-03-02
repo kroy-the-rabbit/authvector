@@ -235,6 +235,18 @@ class RBACAnalyzer:
                 "risky_capabilities": _dedupe_dicts(risky),
             }
 
+        # Keep unbound ServiceAccounts visible so empty-binding clusters still show identity inventory.
+        for sa_ns, sa_name in self.service_accounts:
+            sa_key = f"ServiceAccount:{sa_ns}:{sa_name}"
+            if sa_key in effective:
+                continue
+            effective[sa_key] = {
+                "subject": {"kind": "ServiceAccount", "name": sa_name, "namespace": sa_ns},
+                "grants": [],
+                "rules": [],
+                "risky_capabilities": [],
+            }
+
         who_can_exec_prod = []
         for subject_key, info in effective.items():
             for cap in info["risky_capabilities"]:
